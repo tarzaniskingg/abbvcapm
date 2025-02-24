@@ -64,14 +64,33 @@ st.plotly_chart(fig, use_container_width=True)
 mrp = st.slider("What is your Market Risk Premium?", 0.0, 10.0, 4.0, 0.1)
 timehorizon = st.select_slider("What is your investment horizon?", options = ["3M", "6M", "1Y", "2Y", "3Y", "5Y"])
 
-time_horizons = {
-    '3M': 13,  # ~13 weeks forward
-    '6M': 26,  # ~26 weeks forward
-    '1Y': 52,  # ~52 weeks forward
-    '2Y': 104, # ~104 weeks forward
-    '3Y': 156, # ~156 weeks forward
-    '5Y': 260  # ~260 weeks forward
-}
+if timeselection == 1:
+    time_horizons = {
+        '3M': 13,  # ~13 weeks forward
+        '6M': 26,  # ~26 weeks forward
+        '1Y': 52,  # ~52 weeks forward
+        '2Y': 104, # ~104 weeks forward
+        '3Y': 156, # ~156 weeks forward
+        '5Y': 260  # ~260 weeks forward
+    }
+elif timeselection == 0:
+    time_horizons = {
+        '3M': 63,  # ~13 weeks forward
+        '6M': 126,  # ~26 weeks forward
+        '1Y': 252,  # ~52 weeks forward
+        '2Y': 512, # ~104 weeks forward
+        '3Y': 252*3, # ~156 weeks forward
+        '5Y': 252*5  # ~260 weeks forward
+    }
+elif timeselection == 2:
+    time_horizons = {
+        '3M': 3,  # ~13 weeks forward
+        '6M': 6,  # ~26 weeks forward
+        '1Y': 12,  # ~52 weeks forward
+        '2Y': 24,  # ~104 weeks forward
+        '3Y': 36,  # ~156 weeks forward
+        '5Y': 60  # ~260 weeks forward
+    }
 irr_horizons = {
     '3M': 1/4,  # ~13 weeks forward
     '6M': 1/2,  # ~26 weeks forward
@@ -81,12 +100,12 @@ irr_horizons = {
     '5Y': 5  # ~260 weeks forward
 
 }
-weekly['ER'] = weekly['Rolling Beta'] * mrp/100 + weekly['10Y Yield']/100
-weekly['ER'] = ((weekly['ER'] + 1) ** irr_horizons[timehorizon]) - 1
+
 weekly['10Y Yield'] = ((weekly['10Y Yield']/100 + 1) ** irr_horizons[timehorizon]) - 1
-
+mrp = ((mrp/100+1) ** irr_horizons[timehorizon])-1
+weekly['ER'] = weekly['Rolling Beta'] * mrp + weekly['10Y Yield']
 weekly['RR'] = weekly['ABBVP'].pct_change(periods=time_horizons[timehorizon]).shift(-time_horizons[timehorizon])
-
+weekly['RR'] = ((weekly['RR'] + 1) ** (1/irr_horizons[timehorizon])) - 1
 
 weekly_sliced = weekly.dropna()
 fig3 = go.Figure()
@@ -161,7 +180,7 @@ st.latex(r"r_i = r_{RF} + (r_M - r_{RF}) * b_i")
 st.write(f"Nearest Date: {nearest_date.strftime('%d/%m/%Y')}")
 st.write(f"Expected Return: {weekly_sliced.loc[nearest_date, 'ER']:.2%}")
 st.write(f"Risk Free Rate: {weekly_sliced.loc[nearest_date, '10Y Yield']:.2%}")
-st.write(f"Market Risk Premium: {mrp/100:.2%}")
+st.write(f"Market Risk Premium: {mrp:.2%}")
 st.write(f"Beta: {weekly_sliced.loc[nearest_date, 'Rolling Beta']:.3}")
 st.write(f"Realised Return: {weekly_sliced.loc[nearest_date, 'RR']:.2%}")
 expected_return = weekly.loc[nearest_date, 'ER']
